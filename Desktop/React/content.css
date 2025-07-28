@@ -1,0 +1,76 @@
+/* Additional styles for content script elements */
+#dsa-buddy-icon {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    z-index: 10000;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.buddy-icon-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.buddy-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.buddy-icon:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.buddy-tooltip {
+    position: absolute;
+    top: 70px;
+    background: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.buddy-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #333;
+}
+
+.buddy-icon-container:hover .buddy-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.buddy-pulse {
+    animation: buddyPulse 2s infinite;
+}
+
+@keyframes buddyPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+} 

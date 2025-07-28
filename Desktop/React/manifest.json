@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Your DSA Buddy",
+  "version": "1.0.0",
+  "description": "Your AI-powered coding buddy for LeetCode problems",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://leetcode.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Your DSA Buddy"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://leetcode.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+} 
