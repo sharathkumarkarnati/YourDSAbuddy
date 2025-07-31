@@ -25,16 +25,8 @@ An AI-powered Chrome extension that provides intelligent hints and solutions for
 1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. Sign in with your Google account
 3. Click "Create API Key"
-4. Copy your API key (starts with `AIza...`)
+4. Copy your API key
 
-### Step 3: Configure the Extension
-
-1. Open `config.js` in the extension folder
-2. Replace `YOUR_GEMINI_API_KEY_HERE` with your actual API key:
-   ```javascript
-   GEMINI_API_KEY: "AIzaSyYourActualAPIKeyHere...";
-   ```
-3. Save the file and reload the extension
 
 ## 🎯 How to Use
 
