@@ -2,7 +2,7 @@
 const CONFIG = {
     // Gemini API Configuration
     GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
-    GEMINI_API_KEY: 'AIzaSyA82RTcZ9FkPt1ZVievubUcyEih-a3ZWlk', // Replace with your actual Gemini API key
+    GEMINI_API_KEY: 'api key', // Replace with your actual Gemini API key
     GEMINI_MODEL: 'gemini-2.0-flash',
     GEMINI_MAX_TOKENS: 1000,
     GEMINI_TEMPERATURE: 0.7,
