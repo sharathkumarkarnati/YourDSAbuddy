@@ -102,7 +102,11 @@
         document.body.appendChild(buddyIcon);
         
         // Add click event
-        buddyIcon.addEventListener('click', openBuddyPopup);
+        buddyIcon.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openBuddyPopup();
+        });
         
         // Add pulse animation after a delay
         setTimeout(() => {
@@ -112,8 +116,43 @@
 
     // Open the buddy popup
     function openBuddyPopup() {
-        // Send message to background script to open popup
-        chrome.runtime.sendMessage({ action: 'openBuddyPopup' });
+        try {
+            // Check if extension is available
+            if (typeof chrome === 'undefined' || !chrome.runtime) {
+                throw new Error('Extension not available');
+            }
+            
+            // Try to open popup directly
+            chrome.runtime.sendMessage({ action: 'openBuddyPopup' }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.log('Extension popup error:', chrome.runtime.lastError);
+                    showFallbackMessage();
+                }
+            });
+        } catch (error) {
+            console.log('Extension context error:', error);
+            showFallbackMessage();
+        }
+    }
+    
+    // Show fallback message
+    function showFallbackMessage() {
+        const message = `
+🤖 Your DSA Buddy
+
+The extension popup couldn't be opened automatically.
+
+To use Your DSA Buddy:
+1. Click the extension icon in your browser toolbar
+2. Or press Ctrl+Shift+Y (if you have a keyboard shortcut set)
+
+If the extension isn't working:
+1. Go to chrome://extensions/
+2. Find "Your DSA Buddy"
+3. Make sure it's enabled
+4. Click "Reload" if needed
+        `;
+        alert(message);
     }
 
     // Extract question information from LeetCode page
@@ -153,31 +192,49 @@
 
     // Listen for messages from popup
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        if (request.action === 'getQuestionInfo') {
-            const questionInfo = extractQuestionInfo();
-            sendResponse(questionInfo);
+        try {
+            if (request.action === 'getQuestionInfo') {
+                const questionInfo = extractQuestionInfo();
+                sendResponse(questionInfo);
+            }
+        } catch (error) {
+            console.log('Message listener error:', error);
+            sendResponse({ error: error.message });
         }
+        return true; // Keep the message channel open for async response
     });
 
     // Initialize buddy icon when page loads
     function initBuddy() {
-        // Wait for page to be fully loaded
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', createBuddyIcon);
-        } else {
-            createBuddyIcon();
+        try {
+            // Wait for page to be fully loaded
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', createBuddyIcon);
+            } else {
+                createBuddyIcon();
+            }
+        } catch (error) {
+            console.log('Extension initialization error:', error);
         }
     }
 
-    // Start initialization
-    initBuddy();
+    // Start initialization with error handling
+    try {
+        initBuddy();
+    } catch (error) {
+        console.log('Extension startup error:', error);
+    }
 
     // Re-initialize when navigating to different problems
     let currentUrl = window.location.href;
     setInterval(() => {
-        if (window.location.href !== currentUrl) {
-            currentUrl = window.location.href;
-            setTimeout(createBuddyIcon, 1000); // Wait for page to load
+        try {
+            if (window.location.href !== currentUrl) {
+                currentUrl = window.location.href;
+                setTimeout(createBuddyIcon, 1000); // Wait for page to load
+            }
+        } catch (error) {
+            console.log('Navigation check error:', error);
         }
     }, 1000);
 

@@ -1,6 +1,7 @@
 // Your DSA Buddy - Popup JavaScript (Vanilla JS)
 class DSABuddy {
     constructor() {
+        console.log('=== DSABuddy constructor called ===');
         this.currentStep = 'question';
         this.question = '';
         this.selectedLanguage = 'python';
@@ -13,27 +14,37 @@ class DSABuddy {
         this.showSolution = false;
         this.apiKey = '';
         this.showApiKeyInput = false;
+        this.lastApiCall = 0; // To track last API call time
         
+        console.log('DSABuddy initialized, calling init()...');
         this.init();
     }
 
-    init() {
-        this.loadApiKey();
-        this.getQuestionFromLeetCode();
-        this.render();
+    async init() {
+        console.log('=== init() called ===');
+        try {
+            await this.loadApiKey();
+            this.getQuestionFromLeetCode();
+            this.render();
+            console.log('init() completed');
+        } catch (error) {
+            console.error('Error in init():', error);
+            this.error = 'Failed to initialize extension. Please reload.';
+            this.render();
+        }
     }
 
     loadApiKey() {
-        chrome.storage.sync.get(['apiKey'], (result) => {
-            if (result.apiKey) {
-                this.apiKey = result.apiKey;
-            } else if (CONFIG.DEFAULT_API_KEY && CONFIG.DEFAULT_API_KEY !== 'sk-your-actual-api-key-here') {
-                this.apiKey = CONFIG.DEFAULT_API_KEY;
-                chrome.storage.sync.set({ apiKey: CONFIG.DEFAULT_API_KEY });
-            } else {
-                this.showApiKeyInput = true;
-            }
-            this.render();
+        console.log('=== loadApiKey() called ===');
+        return new Promise((resolve) => {
+            // Clear any stored API key to force using config
+            chrome.storage.sync.remove(['geminiApiKey'], () => {
+                console.log('Cleared stored API key, using config value');
+                this.apiKey = CONFIG.GEMINI_API_KEY;
+                console.log('API Key loaded from config, length:', this.apiKey.length);
+                console.log('API Key starts with:', this.apiKey.substring(0, 20) + '...');
+                resolve();
+            });
         });
     }
 
@@ -42,7 +53,6 @@ class DSABuddy {
             chrome.tabs.sendMessage(tabs[0].id, { action: 'getQuestionInfo' }, (response) => {
                 if (response && response.title) {
                     this.question = response.title;
-                    console.log('Question extracted:', this.question); // Debug log
                     this.render();
                 } else {
                     // Fallback: try to extract from URL
@@ -51,7 +61,6 @@ class DSABuddy {
                         const problemName = url.split('/problems/')[1]?.split('/')[0];
                         if (problemName) {
                             this.question = problemName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                            console.log('Question from URL:', this.question); // Debug log
                             this.render();
                         }
                     }
@@ -61,92 +70,131 @@ class DSABuddy {
     }
 
     saveApiKey() {
-        chrome.storage.sync.set({ apiKey: this.apiKey }, () => {
+        chrome.storage.sync.set({ geminiApiKey: this.apiKey }, () => {
             this.showApiKeyInput = false;
+            this.error = '';
             this.render();
         });
     }
 
     async getHints() {
-        // Check if mock mode is enabled
-        if (CONFIG.MOCK_MODE) {
-            this.loading = true;
-            this.render();
-            
-            // Simulate API delay
-            setTimeout(() => {
-                console.log('Generating hints for question:', this.question); // Debug log
-                const mockHints = CONFIG.MOCK_DATA_GENERATOR.getHints(this.question, this.selectedLanguage);
-                console.log('Generated hints:', mockHints); // Debug log
-                this.hints = mockHints.map((hint, index) => ({
-                    number: index + 1,
-                    text: hint
-                }));
-                
-                this.currentStep = 'hints';
-                this.timerActive = true;
-                this.startTimer();
-                this.loading = false;
-                this.render();
-            }, 1000);
-            return;
-        }
-
+        console.log('=== getHints() called ===');
+        console.log('API Key exists:', !!this.apiKey);
+        console.log('API Key length:', this.apiKey ? this.apiKey.length : 0);
+        console.log('API Key from config:', CONFIG.GEMINI_API_KEY.substring(0, 20) + '...');
+        console.log('API Key being used:', this.apiKey.substring(0, 20) + '...');
+        console.log('Keys match:', this.apiKey === CONFIG.GEMINI_API_KEY);
+        
         if (!this.apiKey) {
-            this.error = 'Please enter your OpenAI API key first.';
+            console.log('No API key found, showing input');
+            this.error = 'Please enter your Gemini API key first.';
             this.showApiKeyInput = true;
             this.render();
             return;
         }
 
+        // Check for rate limiting cooldown
+        const now = Date.now();
+        const timeSinceLastCall = now - this.lastApiCall;
+        const cooldownPeriod = 5000; // 5 seconds between calls (increased)
+        
+        if (timeSinceLastCall < cooldownPeriod) {
+            const waitTime = Math.ceil((cooldownPeriod - timeSinceLastCall) / 1000);
+            console.log(`Rate limited: waiting ${waitTime} seconds`);
+            this.error = `Please wait ${waitTime} seconds before making another request.`;
+            this.render();
+            return;
+        }
+
+        console.log('Starting Gemini API call...');
         this.loading = true;
         this.error = '';
         this.render();
-        
+
         try {
-            const response = await fetch(CONFIG.OPENAI_API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKey}`
-                },
-                body: JSON.stringify({
-                    model: CONFIG.OPENAI_MODEL,
-                    messages: [
-                        {
-                            role: 'system',
-                            content: CONFIG.PROMPTS.hints.system
-                        },
-                        {
-                            role: 'user',
-                            content: CONFIG.PROMPTS.hints.user
-                                .replace('{question}', this.question)
-                                .replace('{language}', this.selectedLanguage)
+            const prompt = CONFIG.API_PROMPTS.HINTS_PROMPT
+                .replace('{question}', this.question)
+                .replace('{language}', this.selectedLanguage);
+
+            console.log('=== GEMINI API CALL DEBUG ===');
+            console.log('Making API call with key:', this.apiKey.substring(0, 20) + '...');
+            console.log('API URL:', CONFIG.GEMINI_API_URL);
+            console.log('Model:', CONFIG.GEMINI_MODEL);
+            console.log('Prompt:', prompt.substring(0, 200) + '...');
+
+            // Add retry logic for rate limiting
+            let response;
+            let retries = 0;
+            const maxRetries = 3;
+
+            while (retries < maxRetries) {
+                response = await fetch(CONFIG.GEMINI_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-goog-api-key': this.apiKey
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: CONFIG.GEMINI_TEMPERATURE,
+                            maxOutputTokens: CONFIG.GEMINI_MAX_TOKENS
                         }
-                    ],
-                    max_tokens: CONFIG.OPENAI_MAX_TOKENS,
-                    temperature: CONFIG.OPENAI_TEMPERATURE
-                })
-            });
+                    })
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+
+                if (response.status === 429) {
+                    retries++;
+                    if (retries < maxRetries) {
+                        console.log(`Rate limited (429). Retrying in ${retries * 2} seconds...`);
+                        await new Promise(resolve => setTimeout(resolve, retries * 2000));
+                        continue;
+                    }
+                }
+                break;
+            }
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error?.message || 'Failed to get hints');
+                console.log('Error response:', errorData);
+                if (response.status === 429) {
+                    throw new Error(`Rate limited: Too many requests. Please wait a few minutes and try again.`);
+                } else if (response.status === 400 && errorData.error?.message?.includes('expired')) {
+                    // Force reload API key from config on expired error
+                    this.apiKey = CONFIG.GEMINI_API_KEY;
+                    console.log('API key expired, reloaded from config');
+                    throw new Error(`API key issue detected. Please try again.`);
+                } else {
+                    throw new Error(`API Error: ${errorData.error?.message || response.statusText}`);
+                }
             }
 
             const data = await response.json();
-            const hintsText = data.choices[0].message.content;
-            
-            const hintsArray = hintsText.split(/\d+\./).filter(hint => hint.trim()).slice(0, CONFIG.MAX_HINTS);
-            this.hints = hintsArray.map((hint, index) => ({
+            console.log('API Response data:', data);
+
+            const content = data.candidates[0].content.parts[0].text;
+
+            // Parse hints from the response
+            const hints = this.parseHintsFromResponse(content);
+
+            this.hints = hints.map((hint, index) => ({
                 number: index + 1,
-                text: hint.trim()
+                text: hint
             }));
-            
+
             this.currentStep = 'hints';
             this.timerActive = true;
             this.startTimer();
+            this.lastApiCall = Date.now(); // Update last API call time
         } catch (err) {
+            console.log('Error in getHints:', err);
             this.error = `Failed to get hints: ${err.message}. Please check your API key and try again.`;
         } finally {
             this.loading = false;
@@ -154,26 +202,33 @@ class DSABuddy {
         }
     }
 
-    async getSolution() {
-        // Check if mock mode is enabled
-        if (CONFIG.MOCK_MODE) {
-            this.loading = true;
-            this.render();
-            
-            // Simulate API delay
-            setTimeout(() => {
-                console.log('Generating solution for question:', this.question); // Debug log
-                this.solution = CONFIG.MOCK_DATA_GENERATOR.getSolution(this.question, this.selectedLanguage);
-                console.log('Generated solution length:', this.solution.length); // Debug log
-                this.currentStep = 'solution';
-                this.loading = false;
-                this.render();
-            }, 1000);
-            return;
+    parseHintsFromResponse(content) {
+        // Try to parse hints from the response
+        const lines = content.split('\n');
+        const hints = [];
+        
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.match(/^Hint \d+:/i) || trimmed.match(/^\d+\./)) {
+                const hint = trimmed.replace(/^Hint \d+:\s*/i, '').replace(/^\d+\.\s*/, '').trim();
+                if (hint) {
+                    hints.push(hint);
+                }
+            }
         }
+        
+        // If we couldn't parse specific hints, split by numbered items
+        if (hints.length === 0) {
+            const parts = content.split(/\d+\./).filter(part => part.trim());
+            hints.push(...parts.slice(0, CONFIG.MAX_HINTS).map(part => part.trim()));
+        }
+        
+        return hints.slice(0, CONFIG.MAX_HINTS);
+    }
 
+    async getSolution() {
         if (!this.apiKey) {
-            this.error = 'Please enter your OpenAI API key first.';
+            this.error = 'Please enter your Gemini API key first.';
             this.showApiKeyInput = true;
             this.render();
             return;
@@ -182,41 +237,45 @@ class DSABuddy {
         this.loading = true;
         this.error = '';
         this.render();
-        
+
         try {
-            const response = await fetch(CONFIG.OPENAI_API_URL, {
+            const prompt = CONFIG.API_PROMPTS.SOLUTION_PROMPT
+                .replace('{question}', this.question)
+                .replace('{language}', this.selectedLanguage);
+
+            console.log('=== GEMINI SOLUTION API CALL ===');
+            console.log('Making solution API call...');
+
+            const response = await fetch(CONFIG.GEMINI_API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKey}`
+                    'X-goog-api-key': this.apiKey
                 },
                 body: JSON.stringify({
-                    model: CONFIG.OPENAI_MODEL,
-                    messages: [
-                        {
-                            role: 'system',
-                            content: CONFIG.PROMPTS.solution.system
-                        },
-                        {
-                            role: 'user',
-                            content: CONFIG.PROMPTS.solution.user
-                                .replace('{question}', this.question)
-                                .replace('{language}', this.selectedLanguage)
-                        }
-                    ],
-                    max_tokens: CONFIG.OPENAI_MAX_TOKENS,
-                    temperature: 0.3
+                    contents: [{
+                        parts: [{
+                            text: prompt
+                        }]
+                    }],
+                    generationConfig: {
+                        temperature: CONFIG.GEMINI_TEMPERATURE,
+                        maxOutputTokens: CONFIG.GEMINI_MAX_TOKENS * 2
+                    }
                 })
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error?.message || 'Failed to get solution');
+                throw new Error(`API Error: ${errorData.error?.message || response.statusText}`);
             }
 
             const data = await response.json();
-            this.solution = data.choices[0].message.content;
+            const content = data.candidates[0].content.parts[0].text;
+
+            this.solution = content;
             this.currentStep = 'solution';
+            this.timerActive = false;
         } catch (err) {
             this.error = `Failed to get solution: ${err.message}. Please check your API key and try again.`;
         } finally {
@@ -233,6 +292,10 @@ class DSABuddy {
         this.timeLeft = CONFIG.TIMER_DURATION;
         this.timerActive = false;
         this.showSolution = false;
+        this.lastApiCall = 0; // Reset API call timer
+        // Force reload API key from config
+        this.apiKey = CONFIG.GEMINI_API_KEY;
+        console.log('App reset, API key reloaded from config');
         this.render();
     }
 
@@ -259,15 +322,35 @@ class DSABuddy {
     }
 
     render() {
-        const root = document.getElementById('root');
+        console.log('=== render() called ===');
+        console.log('Current step:', this.currentStep);
+        console.log('Loading:', this.loading);
+        console.log('Error:', this.error);
+        console.log('API Key loaded:', !!this.apiKey);
         
+        const root = document.getElementById('root');
+        if (!root) {
+            console.error('Root element not found!');
+            return;
+        }
+
         if (this.loading) {
             root.innerHTML = this.renderLoading();
             return;
         }
 
+        // Check if we need to show API key input
+        if (!this.apiKey || this.apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
+            console.log('No valid API key found, showing input');
+            this.showApiKeyInput = true;
+            root.innerHTML = this.renderApiKeyInput();
+            this.attachEventListeners();
+            return;
+        }
+
         if (this.showApiKeyInput) {
             root.innerHTML = this.renderApiKeyInput();
+            this.attachEventListeners();
             return;
         }
 
@@ -409,14 +492,17 @@ class DSABuddy {
                 </div>
                 
                 <div style="margin-bottom: 20px;">
-                    <label class="language-label">OpenAI API Key:</label>
+                    <label class="language-label">Gemini API Key:</label>
                     <input type="password" id="api-key-input" value="${this.apiKey}" 
-                           placeholder="sk-..." style="width: 100%; padding: 12px; border: 2px solid #e1e5e9; 
+                           placeholder="AIza..." style="width: 100%; padding: 12px; border: 2px solid #e1e5e9; 
                            border-radius: 8px; font-size: 14px; font-family: monospace;">
                 </div>
                 
                 <button id="save-api-key-btn" class="button primary-button" ${!this.apiKey.trim() ? 'disabled' : ''}>
                     Save API Key
+                </button>
+                <button id="refresh-api-key-btn" class="button secondary-button" style="margin-left: 10px;">
+                    Refresh from Config
                 </button>
             </div>
             
@@ -468,8 +554,12 @@ class DSABuddy {
 
         // Get hints button
         const getHintsBtn = document.getElementById('get-hints-btn');
+        console.log('Get hints button found:', !!getHintsBtn);
         if (getHintsBtn) {
-            getHintsBtn.addEventListener('click', () => this.getHints());
+            getHintsBtn.addEventListener('click', () => {
+                console.log('Get hints button clicked!');
+                this.getHints();
+            });
         }
 
         // Get solution button
@@ -501,10 +591,50 @@ class DSABuddy {
         if (saveApiKeyBtn) {
             saveApiKeyBtn.addEventListener('click', () => this.saveApiKey());
         }
+
+        // Refresh API key button (for debugging)
+        const refreshApiKeyBtn = document.getElementById('refresh-api-key-btn');
+        if (refreshApiKeyBtn) {
+            refreshApiKeyBtn.addEventListener('click', () => {
+                this.apiKey = CONFIG.GEMINI_API_KEY;
+                console.log('API key refreshed from config');
+                this.error = '';
+                this.render();
+            });
+        }
     }
 }
 
 // Initialize the app when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    new DSABuddy();
+    console.log('=== DOM Content Loaded ===');
+    console.log('Initializing DSABuddy...');
+    try {
+        new DSABuddy();
+    } catch (error) {
+        console.error('Error initializing DSABuddy:', error);
+        const root = document.getElementById('root');
+        if (root) {
+            root.innerHTML = `
+                <div class="container">
+                    <div class="header">
+                        <div class="logo">🤖</div>
+                        <div class="title">Your DSA Buddy</div>
+                        <div class="subtitle">AI-powered coding assistance</div>
+                    </div>
+                    <div class="content">
+                        <div class="error">
+                            Error initializing extension: ${error.message}
+                        </div>
+                        <button onclick="location.reload()" class="button primary-button">
+                            Reload Extension
+                        </button>
+                    </div>
+                    <div class="footer">
+                        Powered by AI • Made with ❤️
+                    </div>
+                </div>
+            `;
+        }
+    }
 }); 

@@ -1,246 +1,134 @@
-# Your DSA Buddy 🤖
+# Your DSA Buddy - Chrome Extension
 
-An AI-powered Chrome extension that provides intelligent hints and solutions for LeetCode problems. Your personal coding buddy that helps you learn and improve your problem-solving skills!
+An AI-powered Chrome extension that provides intelligent hints and solutions for LeetCode problems using Google's Gemini API.
 
-## Features ✨
+## 🚀 Features
 
 - **Smart Question Detection**: Automatically reads LeetCode problems from the current page
-- **Progressive Hints**: Get 3 carefully crafted hints that guide you toward the solution
+- **Progressive Hints**: Get 3 carefully crafted hints to guide your problem-solving approach
 - **30-Minute Timer**: Encourages focused problem-solving with a built-in timer
-- **Multiple Languages**: Support for Python, JavaScript, Java, C++, C, C#, Go, and Rust
-- **AI-Powered**: Uses OpenAI's GPT-3.5-turbo for intelligent hint generation and solutions
-- **Beautiful UI**: Modern, responsive design with smooth animations
-- **Floating Buddy Icon**: Easy access with a floating robot icon on LeetCode pages
+- **Complete Solutions**: Get detailed solutions with explanations when you need them
+- **Multiple Languages**: Support for Python, Java, JavaScript, C++, and more
+- **Floating Buddy Icon**: Easy access with a floating icon on LeetCode pages
 
-## How It Works 🚀
+## 🛠️ Installation
+
+### Step 1: Download the Extension
+
+1. Clone or download this repository
+2. Open Chrome and go to `chrome://extensions/`
+3. Enable "Developer mode" (toggle in top right)
+4. Click "Load unpacked" and select the extension folder
+
+### Step 2: Get Your Gemini API Key
+
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Sign in with your Google account
+3. Click "Create API Key"
+4. Copy your API key (starts with `AIza...`)
+
+### Step 3: Configure the Extension
+
+1. Open `config.js` in the extension folder
+2. Replace `YOUR_GEMINI_API_KEY_HERE` with your actual API key:
+   ```javascript
+   GEMINI_API_KEY: "AIzaSyYourActualAPIKeyHere...";
+   ```
+3. Save the file and reload the extension
+
+## 🎯 How to Use
 
 1. **Navigate to a LeetCode problem**
-2. **Click the buddy icon** (🤖) that appears on the right side of the page
+2. **Click the floating buddy icon** 🤖 on the page
 3. **Select your programming language**
-4. **Get 3 progressive hints** to guide your problem-solving
+4. **Click "Get Hints"** to receive 3 progressive hints
 5. **Spend 30 minutes** trying to solve with the hints
-6. **Get the complete solution** if you need it after the timer
+6. **Click "Get Solution"** if you need the complete solution
 
-## Installation 📦
+## 📁 File Structure
 
-### Method 1: Load as Unpacked Extension
+```
+Your-DSA-Buddy/
+├── manifest.json          # Extension configuration
+├── popup.html            # Main popup interface
+├── popup.js              # Core extension logic
+├── popup.css             # Popup styling
+├── content.js            # Content script for LeetCode integration
+├── content.css           # Floating icon styling
+├── background.js         # Background service worker
+├── config.js             # Configuration and API settings
+├── icons/                # Extension icons
+├── README.md             # This file
+└── INSTALLATION.md       # Detailed installation guide
+```
 
-1. **Clone or download this repository**
+## 🔧 Configuration
 
-   ```bash
-   git clone <repository-url>
-   cd your-dsa-buddy
-   ```
+### API Settings (`config.js`)
 
-2. **Open Chrome and go to Extensions**
-
-   - Open Chrome
-   - Navigate to `chrome://extensions/`
-   - Enable "Developer mode" (toggle in top right)
-
-3. **Load the extension**
-
-   - Click "Load unpacked"
-   - Select the folder containing this extension
-   - The extension should now appear in your extensions list
-
-4. **Set up your OpenAI API key**
-   - Get an API key from [OpenAI](https://platform.openai.com/api-keys)
-   - Open the extension popup
-   - Enter your API key in the settings
-
-### Method 2: Install from Chrome Web Store (Coming Soon)
-
-The extension will be available on the Chrome Web Store soon!
-
-## Configuration ⚙️
-
-### OpenAI API Key Setup
-
-#### Option 1: Default API Key (Recommended for Distribution)
-
-1. **Get an API key** from [OpenAI Platform](https://platform.openai.com/api-keys)
-2. **Open `config.js`** in your code editor
-3. **Replace the placeholder** with your actual API key:
-   ```javascript
-   DEFAULT_API_KEY: 'sk-your-actual-api-key-here',
-   ```
-   Change to:
-   ```javascript
-   DEFAULT_API_KEY: 'sk-your-actual-key-here',
-   ```
-4. **Save the file** and reload the extension
-5. **Users won't need to enter the API key** - it will work automatically
-
-#### Option 2: Manual API Key Entry
-
-1. **Get an API key** from [OpenAI Platform](https://platform.openai.com/api-keys)
-2. **Open the extension popup** on any LeetCode page
-3. **Enter your API key** in the settings section
-4. **Save and start using** the extension
+- `GEMINI_API_KEY`: Your Gemini API key
+- `GEMINI_MODEL`: AI model (default: `gemini-pro`)
+- `GEMINI_MAX_TOKENS`: Maximum response length
+- `TIMER_DURATION`: Timer duration in seconds (default: 1800 = 30 minutes)
 
 ### Supported Programming Languages
 
 - Python
-- JavaScript
 - Java
+- JavaScript
 - C++
-- C
 - C#
 - Go
 - Rust
+- And more!
 
-## Usage Guide 📖
+## 🐛 Troubleshooting
 
-### Getting Started
+### Extension Not Loading
 
-1. **Visit LeetCode.com** and navigate to any problem
-2. **Look for the floating buddy icon** (🤖) on the right side of the page
-3. **Click the icon** to open the DSA Buddy interface
-4. **Select your preferred programming language**
-5. **Click "Get Hints"** to receive 3 progressive hints
+- Check that all files are in the correct directory
+- Ensure `manifest.json` is valid
+- Reload the extension in Chrome
 
-### Understanding the Hints
+### API Key Issues
 
-- **Hint 1**: Usually focuses on understanding the problem and basic approach
-- **Hint 2**: Provides more specific guidance on the algorithm or data structure
-- **Hint 3**: Gives you the final push toward the solution
+- Verify your API key is correct in `config.js`
+- Test your API key using `test-gemini-api.js`
+- Check your Gemini API quota at [Google AI Studio](https://makersuite.google.com/app/apikey)
 
-### Timer Feature
+### No Hints/Solutions
 
-- **30-minute countdown** starts when you receive hints
-- **Focus on problem-solving** during this time
-- **Solution becomes available** after the timer expires
-- **You can still access the solution** before the timer ends if needed
+- Check the browser console for error messages
+- Verify your internet connection
+- Ensure your API key has available quota
 
-## File Structure 📁
+## 🔒 Privacy
 
-```
-your-dsa-buddy/
-├── manifest.json          # Extension configuration
-├── popup.html            # Main popup interface
-├── popup.js              # React application logic
-├── popup.css             # Styling for popup
-├── content.js            # Content script for LeetCode integration
-├── content.css           # Styles for content script elements
-├── background.js         # Background service worker
-├── config.js             # Configuration file
-├── setup-api-key.js      # API key setup helper
-├── icons/                # Extension icons
-│   ├── icon16.png
-│   ├── icon48.png
-│   └── icon128.png
-├── package.json          # Project dependencies
-└── README.md            # This file
-```
+- Your API key is stored locally in Chrome's sync storage
+- No data is sent to external servers except for API calls to Gemini
+- Question content is only sent to Gemini for generating hints/solutions
 
-## Development 🛠️
+## 🤝 Contributing
 
-### Prerequisites
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-- Node.js (v14 or higher)
-- Chrome browser
-- OpenAI API key
+## 📄 License
 
-### Local Development
+This project is licensed under the MIT License.
 
-1. **Install dependencies** (if using npm)
+## 🆘 Support
 
-   ```bash
-   npm install
-   ```
+If you encounter any issues:
 
-2. **Load the extension** in Chrome as described in the installation section
-
-3. **Make changes** to the code and reload the extension in Chrome
-
-4. **Test on LeetCode** by navigating to any problem page
-
-### Building for Production
-
-The extension is ready to use as-is. For production deployment:
-
-1. **Create icon files** in the `icons/` directory (16x16, 48x48, 128x128 pixels)
-2. **Update the manifest.json** with your extension details
-3. **Test thoroughly** on various LeetCode problems
-4. **Package for Chrome Web Store** (if publishing)
-
-## Troubleshooting 🔧
-
-### Common Issues
-
-**Extension not appearing on LeetCode:**
-
-- Make sure you're on a LeetCode problem page
-- Check that the extension is enabled in Chrome
-- Try refreshing the page
-
-**API key errors:**
-
-- Verify your OpenAI API key is correct
-- Check your API key has sufficient credits
-- Ensure you have access to GPT-3.5-turbo (most accounts have this)
-
-**Hints not loading:**
-
-- Check your internet connection
-- Verify your API key is set correctly
-- Try refreshing the extension popup
-
-### Debug Mode
-
-1. **Open Chrome DevTools** (F12)
-2. **Go to the Console tab**
-3. **Look for any error messages** related to the extension
-4. **Check the Network tab** for API call failures
-
-## Privacy & Security 🔒
-
-- **No data is stored** on external servers
-- **API calls are made directly** to OpenAI from your browser
-- **Your LeetCode data** is only read locally
-- **No personal information** is collected or transmitted
-
-## Contributing 🤝
-
-We welcome contributions! Here's how you can help:
-
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit your changes** (`git commit -m 'Add amazing feature'`)
-4. **Push to the branch** (`git push origin feature/amazing-feature`)
-5. **Open a Pull Request**
-
-### Areas for Improvement
-
-- [ ] Add support for more programming languages
-- [ ] Implement hint difficulty levels
-- [ ] Add problem history tracking
-- [ ] Create hint customization options
-- [ ] Add offline mode with cached hints
-- [ ] Implement user progress tracking
-
-## License 📄
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support 💬
-
-If you encounter any issues or have questions:
-
-1. **Check the troubleshooting section** above
-2. **Open an issue** on GitHub
-3. **Contact the development team**
-
-## Acknowledgments 🙏
-
-- **OpenAI** for providing the GPT-4 API
-- **LeetCode** for the excellent platform
-- **React team** for the amazing framework
-- **Chrome Extensions team** for the platform
+1. Check the troubleshooting section above
+2. Look at the browser console for error messages
+3. Verify your API key and quota
+4. Create an issue on GitHub
 
 ---
 
-**Happy coding! 🚀**
-
-_Your DSA Buddy - Making LeetCode problems easier, one hint at a time!_
+**Made with ❤️ for the coding community**

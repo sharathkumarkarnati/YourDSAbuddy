@@ -6,9 +6,16 @@ chrome.runtime.onInstalled.addListener(() => {
 // Handle messages from content script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'openBuddyPopup') {
-        // Open the popup programmatically
-        chrome.action.openPopup();
+        try {
+            // Try to open popup programmatically
+            chrome.action.openPopup();
+            sendResponse({ success: true });
+        } catch (error) {
+            console.log('Error opening popup:', error);
+            sendResponse({ success: false, error: error.message });
+        }
     }
+    return true; // Keep the message channel open for async response
 });
 
 // Handle extension icon click
